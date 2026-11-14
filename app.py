@@ -70,28 +70,11 @@ html, body, [class*="css"], .stApp {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Force backgrounds strictly to our theme variables */
-html, body, #root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {
-    background-color: var(--bg-base) !important;
-}
-.stApp {
-    color: var(--text);
-    background-image:
-        radial-gradient(900px 600px at 8% -5%,  var(--glow-blue), transparent 60%),
-        radial-gradient(800px 600px at 95% 5%,  var(--glow-purple), transparent 60%),
-        radial-gradient(900px 700px at 60% 105%, var(--glow-pink), transparent 60%) !important;
-    background-attachment: fixed !important;
-}
 [data-testid="stHeader"] { background: transparent !important; }
 .block-container { padding-top: 2.5rem; max-width: 1100px; }
 
-/* Force readable text */
-.stApp :is(p, label, span, small, li, legend, h1, h2, h3, h4, h5, h6) { color: var(--text) !important; }
-[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * { color: var(--muted) !important; }
-
 /* Sidebar */
-[data-testid="stSidebar"], [data-testid="stSidebar"] > div {
-    background-color: var(--sidebar-bg) !important;
+[data-testid="stSidebar"] {
     backdrop-filter: blur(18px) !important;
     -webkit-backdrop-filter: blur(18px) !important;
     border-right: 1px solid var(--card-border) !important;
@@ -121,42 +104,27 @@ html, body, #root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stM
     color: transparent !important;
 }
 .hero-sub {
-    color: var(--muted);
     font-size: 1.05rem;
     font-weight: 300;
     margin-bottom: 1.6rem;
 }
 .stApp h3 { font-weight: 600; letter-spacing: -0.01em; }
 
-/* Inputs & Textareas - Force background and text color to bypass OS dark mode */
+/* Inputs & Textareas */
 [data-baseweb="textarea"], [data-baseweb="base-input"], [data-baseweb="input"],
 div[data-baseweb="select"] > div {
-    background-color: transparent !important;
-    border: 1px solid var(--card-border) !important;
     border-radius: 14px !important;
     transition: border-color .2s ease, box-shadow .2s ease;
 }
-[data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input,
-[data-testid="stNumberInput"] input, .stTextArea textarea, .stTextInput input, .stNumberInput input {
-    background-color: var(--field) !important;
-    border-radius: 14px !important;
-    color: var(--text) !important;
-    -webkit-text-fill-color: var(--text) !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-.stTextArea textarea::placeholder, .stTextInput input::placeholder {
-    color: var(--muted) !important;
-    -webkit-text-fill-color: var(--muted) !important;
-}
-.stNumberInput button { color: var(--text) !important; background: transparent !important; }
-[data-baseweb="select"] * { color: var(--text) !important; }
 
-[data-baseweb="textarea"]:focus-within, [data-baseweb="base-input"]:focus-within {
+[data-testid="stTextArea"] textarea:focus, [data-testid="stTextInput"] input:focus, 
+.stTextArea textarea:focus, .stTextInput input:focus, .stNumberInput input:focus {
     border-color: var(--g-purple) !important;
     box-shadow: 0 0 0 3px rgba(155, 114, 203, 0.25) !important;
 }
+
+.stNumberInput button { color: var(--text) !important; background: transparent !important; }
+[data-baseweb="select"] * { color: var(--text) !important; }
 
 /* Toolbar icons */
 [data-testid="stToolbar"], [data-testid="stToolbar"] * { color: var(--text) !important; }
@@ -170,11 +138,8 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 
 /* File uploader */
 [data-testid="stFileUploader"] section {
-    background-color: var(--field) !important;
-    border: 1px dashed rgba(155, 114, 203, 0.65) !important;
     border-radius: 14px;
 }
-[data-testid="stFileUploader"] section *, [data-testid="stFileUploaderFile"] * { color: var(--text) !important; }
 [data-testid="stFileUploader"] section button {
     background: var(--g-grad) !important;
     border: none !important;
@@ -186,8 +151,6 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 
 /* Expander */
 [data-testid="stExpander"] {
-    background-color: var(--card) !important;
-    border: 1px solid var(--card-border) !important;
     border-radius: 14px;
     box-shadow: 0 6px 20px var(--shadow);
 }
@@ -199,8 +162,6 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 }
 [data-baseweb="radio"]:has(input:not(:checked)) > div:first-child,
 [data-baseweb="checkbox"]:has(input:not(:checked)) > span:first-of-type {
-    background-color: var(--field) !important;
-    border-color: var(--muted) !important;
     filter: hue-rotate(90deg);
 }
 
@@ -238,10 +199,10 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 
 def inject_theme(mode: str):
     t = THEMES[mode]
-    root = f"""
+    # Inject exact colors to bypass Streamlit's default theme overrides
+    css = f"""
     <style>
-    html {{
-        /* Removed color-scheme to prevent OS dark mode from bleeding into the textarea */
+    :root {{
         --g-blue: #4285F4;
         --g-purple: #9B72CB;
         --g-pink: #D96570;
@@ -259,9 +220,74 @@ def inject_theme(mode: str):
         --shadow: {t['shadow']};
         --field: {t['field']};
     }}
+
+    /* Force backgrounds directly on the containers */
+    html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {{
+        background-color: {t['bg_base']} !important;
+        color: {t['text']} !important;
+    }}
+
+    .stApp {{
+        background-image:
+            radial-gradient(900px 600px at 8% -5%,  {t['glow_blue']}, transparent 60%),
+            radial-gradient(800px 600px at 95% 5%,  {t['glow_purple']}, transparent 60%),
+            radial-gradient(900px 700px at 60% 105%, {t['glow_pink']}, transparent 60%) !important;
+        background-attachment: fixed !important;
+    }}
+
+    [data-testid="stSidebar"], [data-testid="stSidebar"] > div {{
+        background-color: {t['sidebar_bg']} !important;
+    }}
+
+    /* Force text colors */
+    .stApp :is(p, label, span, small, li, legend, h1, h2, h3, h4, h5, h6) {{ color: {t['text']} !important; }}
+    [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * {{ color: {t['muted']} !important; }}
+
+    /* Force inputs explicitly */
+    [data-baseweb="textarea"], [data-baseweb="base-input"], [data-baseweb="input"], div[data-baseweb="select"] > div {{
+        background-color: {t['field']} !important;
+        border: 1px solid {t['card_border']} !important;
+    }}
+    [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input,
+    [data-testid="stNumberInput"] input, .stTextArea textarea, .stTextInput input, .stNumberInput input {{
+        background-color: {t['field']} !important;
+        color: {t['text']} !important;
+        -webkit-text-fill-color: {t['text']} !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }}
+    .stTextArea textarea::placeholder, .stTextInput input::placeholder {{
+        color: {t['muted']} !important;
+        -webkit-text-fill-color: {t['muted']} !important;
+    }}
+    [data-baseweb="radio"]:has(input:not(:checked)) > div:first-child,
+    [data-baseweb="checkbox"]:has(input:not(:checked)) > span:first-of-type {{
+        background-color: {t['field']} !important;
+        border-color: {t['muted']} !important;
+    }}
+
+    /* Expander */
+    [data-testid="stExpander"] {{
+        background-color: {t['card']} !important;
+        border: 1px solid {t['card_border']} !important;
+    }}
+
+    /* Dropdown menus */
+    div[data-baseweb="popover"] ul, div[data-baseweb="menu"] {{
+        background-color: {t['popover_bg']} !important;
+    }}
+    div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * {{ color: {t['text']} !important; }}
+
+    /* File uploader */
+    [data-testid="stFileUploader"] section {{
+        background-color: {t['field']} !important;
+        border: 1px dashed rgba(155, 114, 203, 0.65) !important;
+    }}
+    [data-testid="stFileUploader"] section *, [data-testid="stFileUploaderFile"] * {{ color: {t['text']} !important; }}
     </style>
     """
-    st.markdown(root + STATIC_CSS, unsafe_allow_html=True)
+    st.markdown(css + STATIC_CSS, unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------
