@@ -39,23 +39,25 @@ THEMES = {
         "muted": "rgba(255, 255, 255, 0.60)",
         "card": "rgba(255, 255, 255, 0.045)",
         "card_border": "rgba(255, 255, 255, 0.10)",
+        "field": "rgba(255, 255, 255, 0.06)",
         "sidebar_bg": "rgba(14, 16, 28, 0.72)",
         "popover_bg": "#161a2e",
         "shadow": "rgba(0, 0, 0, 0.45)",
         "scheme": "dark",
     },
     "light": {
-        "bg_base": "#fcf8fd",
-        "glow_blue": "rgba(66, 133, 244, 0.20)",
-        "glow_purple": "rgba(155, 114, 203, 0.22)",
-        "glow_pink": "rgba(244, 143, 177, 0.30)",
-        "text": "#1f1f33",
-        "muted": "rgba(31, 31, 51, 0.62)",
-        "card": "rgba(255, 255, 255, 0.70)",
-        "card_border": "rgba(155, 114, 203, 0.25)",
-        "sidebar_bg": "rgba(255, 255, 255, 0.62)",
+        "bg_base": "#f5f8ff",
+        "glow_blue": "rgba(66, 133, 244, 0.22)",
+        "glow_purple": "rgba(176, 140, 230, 0.24)",
+        "glow_pink": "rgba(255, 170, 200, 0.40)",
+        "text": "#1b1f3a",
+        "muted": "rgba(27, 31, 58, 0.62)",
+        "card": "rgba(255, 255, 255, 0.78)",
+        "card_border": "rgba(66, 133, 244, 0.16)",
+        "field": "#ffffff",
+        "sidebar_bg": "rgba(255, 255, 255, 0.72)",
         "popover_bg": "#ffffff",
-        "shadow": "rgba(155, 114, 203, 0.25)",
+        "shadow": "rgba(120, 100, 200, 0.22)",
         "scheme": "light",
     },
 }
@@ -125,15 +127,34 @@ html, body, [class*="css"], .stApp {
 .stApp h3 { font-weight: 600; letter-spacing: -0.01em; }
 
 /* Inputs */
-.stTextArea textarea, .stTextInput input, .stNumberInput input,
+/* Streamlit wraps each input in several BaseWeb containers that carry their own
+   background, so every layer has to be set or a light/dark mismatch shows through. */
+[data-baseweb="textarea"], [data-baseweb="base-input"], [data-baseweb="input"],
 div[data-baseweb="select"] > div {
-    background: var(--card) !important;
-    color: var(--text) !important;
+    background: var(--field) !important;
     border: 1px solid var(--card-border) !important;
     border-radius: 14px !important;
     transition: border-color .2s ease, box-shadow .2s ease;
 }
+.stTextArea textarea, .stTextInput input, .stNumberInput input {
+    background: transparent !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
+}
+.stTextArea textarea::placeholder, .stTextInput input::placeholder {
+    color: var(--muted) !important;
+    -webkit-text-fill-color: var(--muted) !important;
+}
 .stNumberInput button { color: var(--text) !important; background: transparent !important; }
+[data-baseweb="select"] * { color: var(--text) !important; }
+[data-baseweb="textarea"]:focus-within, [data-baseweb="base-input"]:focus-within {
+    border-color: var(--g-purple) !important;
+    box-shadow: 0 0 0 3px rgba(155, 114, 203, 0.25) !important;
+}
+
+/* Top-right toolbar (Share, star, edit, GitHub, menu) */
+[data-testid="stToolbar"], [data-testid="stToolbar"] * { color: var(--text) !important; }
+[data-testid="stToolbar"] svg { fill: currentColor; opacity: 0.85; }
 .stTextArea textarea:focus, .stTextInput input:focus, .stNumberInput input:focus {
     border-color: var(--g-purple) !important;
     box-shadow: 0 0 0 3px rgba(155, 114, 203, 0.25) !important;
@@ -147,18 +168,28 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 
 /* File uploader */
 [data-testid="stFileUploader"] section {
-    background: var(--card);
-    border: 1px dashed rgba(155, 114, 203, 0.6);
+    background: var(--field) !important;
+    border: 1px dashed rgba(155, 114, 203, 0.65);
     border-radius: 14px;
 }
-[data-testid="stFileUploader"] section button { color: var(--text) !important; }
+[data-testid="stFileUploader"] section *, [data-testid="stFileUploaderFile"] * { color: var(--text) !important; }
+[data-testid="stFileUploader"] section button {
+    background: var(--g-grad) !important;
+    border: none !important;
+    border-radius: 999px !important;
+}
+[data-testid="stFileUploader"] section button, [data-testid="stFileUploader"] section button * {
+    color: #fff !important;
+}
 
 /* Expander */
 [data-testid="stExpander"] {
     background: var(--card);
     border: 1px solid var(--card-border);
     border-radius: 14px;
+    box-shadow: 0 6px 20px var(--shadow);
 }
+[data-testid="stExpander"] details, [data-testid="stExpander"] summary { background: transparent !important; }
 
 /* Recolour Streamlit's default red accent (sliders, checkboxes, radios, toggles) to purple */
 [data-testid="stSlider"], [data-testid="stCheckbox"], [data-testid="stRadio"], [data-testid="stToggle"] {
@@ -220,6 +251,7 @@ def inject_theme(mode: str):
         --sidebar-bg: {t['sidebar_bg']};
         --popover-bg: {t['popover_bg']};
         --shadow: {t['shadow']};
+        --field: {t['field']};
     }}
     </style>
     """
@@ -324,7 +356,7 @@ def generate(text, writer_path, opts, weights_path, channels, num_attlayers):
 # --------------------------------------------------------------------------
 # The theme switch sits at the top of the sidebar; it must run before the CSS is injected.
 with st.sidebar:
-    light_mode = st.toggle("Light theme", value=False, key="light_mode")
+    light_mode = st.toggle("Light theme", value=True, key="light_mode")
 
 inject_theme("light" if light_mode else "dark")
 
