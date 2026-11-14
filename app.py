@@ -28,6 +28,14 @@ DEFAULT_WEIGHTS = "./weights/model_weights.h5"
 # --------------------------------------------------------------------------
 # Theming (no config.toml needed: everything is injected as CSS)
 # Gemini palette: blue #4285F4 -> purple #9B72CB -> pink/red #D96570
+#
+# Two themes:
+#   light -> Gemini colours on a bright, airy canvas
+#   dark  -> deep midnight canvas with the same Gemini accents, glowing
+#
+# Every UI colour is driven by CSS variables so switching themes is a pure
+# variable swap. BaseWeb / native widgets are handled with explicit
+# `color-scheme` + targeted overrides so they never leak the wrong theme.
 # --------------------------------------------------------------------------
 THEMES = {
     "dark": {
@@ -36,7 +44,7 @@ THEMES = {
         "glow_purple": "rgba(155, 114, 203, 0.26)",
         "glow_pink": "rgba(217, 101, 112, 0.22)",
         "text": "#F1F3F9",
-        "muted": "rgba(255, 255, 255, 0.60)",
+        "muted": "rgba(255, 255, 255, 0.62)",
         "card": "rgba(255, 255, 255, 0.045)",
         "card_border": "rgba(255, 255, 255, 0.10)",
         "field": "rgba(255, 255, 255, 0.06)",
@@ -46,18 +54,18 @@ THEMES = {
         "scheme": "dark",
     },
     "light": {
-        "bg_base": "#f5f8ff",
-        "glow_blue": "rgba(66, 133, 244, 0.22)",
-        "glow_purple": "rgba(176, 140, 230, 0.24)",
-        "glow_pink": "rgba(255, 170, 200, 0.40)",
+        "bg_base": "#f7f9ff",
+        "glow_blue": "rgba(66, 133, 244, 0.18)",
+        "glow_purple": "rgba(155, 114, 203, 0.16)",
+        "glow_pink": "rgba(217, 101, 112, 0.12)",
         "text": "#1b1f3a",
         "muted": "rgba(27, 31, 58, 0.62)",
-        "card": "rgba(255, 255, 255, 0.78)",
-        "card_border": "rgba(66, 133, 244, 0.16)",
+        "card": "rgba(255, 255, 255, 0.85)",
+        "card_border": "rgba(66, 133, 244, 0.18)",
         "field": "#ffffff",
-        "sidebar_bg": "rgba(255, 255, 255, 0.72)",
+        "sidebar_bg": "rgba(255, 255, 255, 0.82)",
         "popover_bg": "#ffffff",
-        "shadow": "rgba(120, 100, 200, 0.22)",
+        "shadow": "rgba(120, 100, 200, 0.18)",
         "scheme": "light",
     },
 }
@@ -70,22 +78,16 @@ html, body, [class*="css"], .stApp {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-html, body { background: var(--bg-base) !important; color-scheme: inherit; }
+/* ---- Color scheme: makes native controls (inputs, selects, scrollbars,
+        date pickers) render in the correct theme. Applied broadly because
+        BaseWeb portals render outside .stApp. ---- */
+html { color-scheme: var(--g-scheme); }
+body { color-scheme: var(--g-scheme); }
+.stApp { color-scheme: var(--g-scheme); }
+
+html, body { background: var(--bg-base) !important; }
 [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {
     background: transparent !important;
-}
-
-/* Unchecked radios / checkboxes: native styling follows Streamlit's own theme, which can
-   clash with ours, so give the empty state an explicit themed look. */
-[data-baseweb="radio"]:has(input:not(:checked)) > div:first-child {
-    background: var(--field) !important;
-    border: 1.5px solid var(--g-purple) !important;
-    filter: hue-rotate(90deg); /* cancels the parent's 270deg accent shift below */
-}
-[data-baseweb="checkbox"]:has(input:not(:checked)) > span:first-of-type {
-    background: var(--field) !important;
-    border-color: var(--g-purple) !important;
-    filter: hue-rotate(90deg);
 }
 
 .stApp {
@@ -144,9 +146,8 @@ html, body { background: var(--bg-base) !important; color-scheme: inherit; }
 }
 .stApp h3 { font-weight: 600; letter-spacing: -0.01em; }
 
-/* Inputs */
-/* Streamlit wraps each input in several BaseWeb containers that carry their own
-   background, so every layer has to be set or a light/dark mismatch shows through. */
+/* Inputs — every wrapper layer Streamlit stacks must be painted, otherwise
+   a stale light/dark theme shows through in the active theme. */
 [data-baseweb="textarea"], [data-baseweb="base-input"], [data-baseweb="input"],
 div[data-baseweb="select"] > div {
     background: var(--field) !important;
@@ -154,8 +155,6 @@ div[data-baseweb="select"] > div {
     border-radius: 14px !important;
     transition: border-color .2s ease, box-shadow .2s ease;
 }
-/* Paint the real <textarea>/<input> element itself, so the colour is right
-   no matter what Streamlit's own theme put on the wrappers around it. */
 [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input,
 [data-testid="stNumberInput"] input, .stTextArea textarea, .stTextInput input, .stNumberInput input {
     background: var(--field) !important;
@@ -213,9 +212,24 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 }
 [data-testid="stExpander"] details, [data-testid="stExpander"] summary { background: transparent !important; }
 
-/* Recolour Streamlit's default red accent (sliders, checkboxes, radios, toggles) to purple */
+/* ---- Widgets: sliders, checkboxes, radios, toggles --------------------
+   Streamlit's default accent is red. We can't override BaseWeb's primary
+   colour via CSS variables, but a hue-rotate on the widget turns that red
+   into the Gemini purple. Crucially, we ALSO paint the unchecked / off
+   backgrounds explicitly, because hue-rotate does NOT change lightness and
+   would otherwise leak the wrong theme's grey. */
 [data-testid="stSlider"], [data-testid="stCheckbox"], [data-testid="stRadio"], [data-testid="stToggle"] {
     filter: hue-rotate(270deg) saturate(0.85);
+}
+[data-baseweb="radio"]:has(input:not(:checked)) > div:first-child,
+[data-baseweb="checkbox"] span:first-of-type {
+    background: var(--field) !important;
+    border: 1.5px solid var(--g-purple) !important;
+    filter: hue-rotate(90deg);  /* cancels the parent's 270deg accent shift */
+}
+/* Toggle "off" track */
+[data-testid="stToggle"] [data-baseweb="toggle"] > div:last-child {
+    background: var(--field) !important;
 }
 
 /* Buttons */
@@ -253,11 +267,15 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 
 
 def inject_theme(mode: str):
+    """Swap every themed CSS variable at once. The `--g-scheme` variable is
+    new: it feeds `color-scheme` on html/body/.stApp so native form controls
+    and BaseWeb widgets pick the right palette immediately."""
     t = THEMES[mode]
     root = f"""
     <style>
     :root {{
         color-scheme: {t['scheme']};
+        --g-scheme: {t['scheme']};
         --g-blue: #4285F4;
         --g-purple: #9B72CB;
         --g-pink: #D96570;
