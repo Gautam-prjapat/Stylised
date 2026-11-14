@@ -75,7 +75,9 @@ body { color-scheme: var(--g-scheme); }
 .stApp { color-scheme: var(--g-scheme); }
 
 /* Force backgrounds to respect theme variables */
-html, body { background-color: var(--bg-base) !important; }
+html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] { 
+    background-color: var(--bg-base) !important; 
+}
 .stApp {
     color: var(--text);
     background-color: var(--bg-base) !important;
@@ -85,15 +87,11 @@ html, body { background-color: var(--bg-base) !important; }
         radial-gradient(900px 700px at 60% 105%, var(--glow-pink), transparent 60%) !important;
     background-attachment: fixed !important;
 }
-[data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {
-    background: transparent !important;
-}
-
 [data-testid="stHeader"] { background: transparent !important; }
 .block-container { padding-top: 2.5rem; max-width: 1100px; }
 
 /* Force readable text */
-.stApp :is(p, label, span, small, li, legend, h1, h2, h3, h4, h5, h6) { color: var(--text); }
+.stApp :is(p, label, span, small, li, legend, h1, h2, h3, h4, h5, h6) { color: var(--text) !important; }
 [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * { color: var(--muted) !important; }
 
 /* Sidebar */
@@ -135,7 +133,7 @@ html, body { background-color: var(--bg-base) !important; }
 }
 .stApp h3 { font-weight: 600; letter-spacing: -0.01em; }
 
-/* Inputs (Fix for thick black border and invisible text) */
+/* Inputs & Textareas (Fix for invisible text and black background in dark mode) */
 [data-baseweb="textarea"], [data-baseweb="base-input"], [data-baseweb="input"],
 div[data-baseweb="select"] > div {
     background-color: var(--field) !important;
@@ -166,11 +164,8 @@ div[data-baseweb="select"] > div {
 }
 
 /* Toolbar icons (Fix for invisible icons in dark mode) */
-[data-testid="stToolbar"] { background: transparent !important; }
-[data-testid="stToolbar"] button, [data-testid="stToolbar"] svg {
-    color: var(--text) !important;
-    fill: var(--text) !important;
-}
+[data-testid="stToolbar"], [data-testid="stToolbar"] * { color: var(--text) !important; }
+[data-testid="stToolbar"] svg { fill: currentColor !important; opacity: 0.85 !important; }
 
 /* Dropdown menus */
 div[data-baseweb="popover"] ul, div[data-baseweb="menu"] {
@@ -185,6 +180,14 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
     border-radius: 14px;
 }
 [data-testid="stFileUploader"] section *, [data-testid="stFileUploaderFile"] * { color: var(--text) !important; }
+[data-testid="stFileUploader"] section button {
+    background: var(--g-grad) !important;
+    border: none !important;
+    border-radius: 999px !important;
+}
+[data-testid="stFileUploader"] section button, [data-testid="stFileUploader"] section button * {
+    color: #fff !important;
+}
 
 /* Expander */
 [data-testid="stExpander"] {
@@ -195,48 +198,16 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 }
 [data-testid="stExpander"] details, [data-testid="stExpander"] summary { background: transparent !important; }
 
-/* ---- Explicit Widget Styling (Replaces fragile hue-rotate hack) ---- */
-/* Radio */
-[data-baseweb="radio"] > div:first-of-type {
+/* Recolour Streamlit's default red accent to Gemini purple */
+[data-testid="stSlider"], [data-testid="stCheckbox"], [data-testid="stRadio"], [data-testid="stToggle"] {
+    filter: hue-rotate(270deg) saturate(0.85);
+}
+/* Explicitly paint unchecked backgrounds to cancel out the hue-rotate tint */
+[data-baseweb="radio"]:has(input:not(:checked)) > div:first-child,
+[data-baseweb="checkbox"]:has(input:not(:checked)) > span:first-of-type {
+    background-color: var(--field) !important;
     border-color: var(--muted) !important;
-    background-color: transparent !important;
-}
-[data-baseweb="radio"]:has(input:checked) > div:first-of-type {
-    border-color: var(--g-purple) !important;
-}
-[data-baseweb="radio"]:has(input:checked) > div:first-of-type > div {
-    background-color: var(--g-purple) !important;
-}
-
-/* Checkbox */
-[data-baseweb="checkbox"] > span:first-of-type {
-    border-color: var(--muted) !important;
-    background-color: transparent !important;
-}
-[data-baseweb="checkbox"]:has(input:checked) > span:first-of-type {
-    background-color: var(--g-purple) !important;
-    border-color: var(--g-purple) !important;
-}
-[data-baseweb="checkbox"]:has(input:checked) svg { fill: #fff !important; }
-
-/* Toggle */
-[data-testid="stToggle"] [data-baseweb="toggle"] > div:last-child {
-    background-color: var(--muted) !important;
-}
-[data-testid="stToggle"] [data-baseweb="toggle"] > div:last-child > div {
-    background-color: #fff !important;
-}
-[data-testid="stToggle"] [data-baseweb="toggle"]:has(input:checked) > div:last-child {
-    background-color: var(--g-purple) !important;
-}
-
-/* Slider */
-[data-testid="stSlider"] [data-baseweb="slider"] [role="slider"] {
-    background-color: var(--g-purple) !important;
-    border-color: var(--g-purple) !important;
-}
-[data-testid="stSlider"] [data-baseweb="slider"] > div > div > div > div {
-    background-color: var(--g-purple) !important;
+    filter: hue-rotate(90deg);
 }
 
 /* Buttons */
