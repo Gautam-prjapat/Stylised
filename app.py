@@ -70,17 +70,12 @@ html, body, [class*="css"], .stApp {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-html { color-scheme: var(--g-scheme); }
-body { color-scheme: var(--g-scheme); }
-.stApp { color-scheme: var(--g-scheme); }
-
-/* Force backgrounds to respect theme variables */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] { 
-    background-color: var(--bg-base) !important; 
+/* Force backgrounds strictly to our theme variables */
+html, body, #root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {
+    background-color: var(--bg-base) !important;
 }
 .stApp {
     color: var(--text);
-    background-color: var(--bg-base) !important;
     background-image:
         radial-gradient(900px 600px at 8% -5%,  var(--glow-blue), transparent 60%),
         radial-gradient(800px 600px at 95% 5%,  var(--glow-purple), transparent 60%),
@@ -95,7 +90,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
 [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * { color: var(--muted) !important; }
 
 /* Sidebar */
-[data-testid="stSidebar"] {
+[data-testid="stSidebar"], [data-testid="stSidebar"] > div {
     background-color: var(--sidebar-bg) !important;
     backdrop-filter: blur(18px) !important;
     -webkit-backdrop-filter: blur(18px) !important;
@@ -133,17 +128,17 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
 }
 .stApp h3 { font-weight: 600; letter-spacing: -0.01em; }
 
-/* Inputs & Textareas (Fix for invisible text and black background in dark mode) */
+/* Inputs & Textareas - Force background and text color to bypass OS dark mode */
 [data-baseweb="textarea"], [data-baseweb="base-input"], [data-baseweb="input"],
 div[data-baseweb="select"] > div {
-    background-color: var(--field) !important;
+    background-color: transparent !important;
     border: 1px solid var(--card-border) !important;
     border-radius: 14px !important;
     transition: border-color .2s ease, box-shadow .2s ease;
 }
 [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input,
 [data-testid="stNumberInput"] input, .stTextArea textarea, .stTextInput input, .stNumberInput input {
-    background-color: transparent !important;
+    background-color: var(--field) !important;
     border-radius: 14px !important;
     color: var(--text) !important;
     -webkit-text-fill-color: var(--text) !important;
@@ -163,7 +158,7 @@ div[data-baseweb="select"] > div {
     box-shadow: 0 0 0 3px rgba(155, 114, 203, 0.25) !important;
 }
 
-/* Toolbar icons (Fix for invisible icons in dark mode) */
+/* Toolbar icons */
 [data-testid="stToolbar"], [data-testid="stToolbar"] * { color: var(--text) !important; }
 [data-testid="stToolbar"] svg { fill: currentColor !important; opacity: 0.85 !important; }
 
@@ -202,7 +197,6 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 [data-testid="stSlider"], [data-testid="stCheckbox"], [data-testid="stRadio"], [data-testid="stToggle"] {
     filter: hue-rotate(270deg) saturate(0.85);
 }
-/* Explicitly paint unchecked backgrounds to cancel out the hue-rotate tint */
 [data-baseweb="radio"]:has(input:not(:checked)) > div:first-child,
 [data-baseweb="checkbox"]:has(input:not(:checked)) > span:first-of-type {
     background-color: var(--field) !important;
@@ -246,9 +240,8 @@ def inject_theme(mode: str):
     t = THEMES[mode]
     root = f"""
     <style>
-    :root {{
-        color-scheme: {t['scheme']};
-        --g-scheme: {t['scheme']};
+    html {{
+        /* Removed color-scheme to prevent OS dark mode from bleeding into the textarea */
         --g-blue: #4285F4;
         --g-purple: #9B72CB;
         --g-pink: #D96570;
