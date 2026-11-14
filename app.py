@@ -158,11 +158,11 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 
 /* Recolour Streamlit's default red accent to Gemini purple */
 [data-testid="stSlider"], [data-testid="stCheckbox"], [data-testid="stRadio"], [data-testid="stToggle"] {
-    filter: hue-rotate(270deg) saturate(0.85);
+    filter: hue-rotate(270deg) saturate(0.85) !important;
 }
 [data-baseweb="radio"]:has(input:not(:checked)) > div:first-child,
 [data-baseweb="checkbox"]:has(input:not(:checked)) > span:first-of-type {
-    filter: hue-rotate(90deg);
+    filter: hue-rotate(90deg) !important;
 }
 
 /* Buttons */
@@ -199,7 +199,6 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 
 def inject_theme(mode: str):
     t = THEMES[mode]
-    # Inject exact colors to bypass Streamlit's default theme overrides
     css = f"""
     <style>
     :root {{
@@ -221,8 +220,8 @@ def inject_theme(mode: str):
         --field: {t['field']};
     }}
 
-    /* Force backgrounds directly on the containers */
-    html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {{
+    /* Aggressively force backgrounds to override Streamlit's native theme */
+    html, body, #root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {{
         background-color: {t['bg_base']} !important;
         color: {t['text']} !important;
     }}
@@ -243,24 +242,27 @@ def inject_theme(mode: str):
     .stApp :is(p, label, span, small, li, legend, h1, h2, h3, h4, h5, h6) {{ color: {t['text']} !important; }}
     [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * {{ color: {t['muted']} !important; }}
 
-    /* Force inputs explicitly */
+    /* Force inputs explicitly, removing native black borders and dark backgrounds */
     [data-baseweb="textarea"], [data-baseweb="base-input"], [data-baseweb="input"], div[data-baseweb="select"] > div {{
         background-color: {t['field']} !important;
         border: 1px solid {t['card_border']} !important;
     }}
-    [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input,
-    [data-testid="stNumberInput"] input, .stTextArea textarea, .stTextInput input, .stNumberInput input {{
-        background-color: {t['field']} !important;
+    
+    /* Textarea inner element - force transparent background and correct text color */
+    textarea, input, [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input, .stTextArea textarea, .stTextInput input, .stNumberInput input {{
+        background-color: transparent !important;
         color: {t['text']} !important;
         -webkit-text-fill-color: {t['text']} !important;
         border: none !important;
         box-shadow: none !important;
         outline: none !important;
     }}
+    
     .stTextArea textarea::placeholder, .stTextInput input::placeholder {{
         color: {t['muted']} !important;
         -webkit-text-fill-color: {t['muted']} !important;
     }}
+    
     [data-baseweb="radio"]:has(input:not(:checked)) > div:first-child,
     [data-baseweb="checkbox"]:has(input:not(:checked)) > span:first-of-type {{
         background-color: {t['field']} !important;
@@ -287,7 +289,11 @@ def inject_theme(mode: str):
     [data-testid="stFileUploader"] section *, [data-testid="stFileUploaderFile"] * {{ color: {t['text']} !important; }}
     </style>
     """
-    st.markdown(css + STATIC_CSS, unsafe_allow_html=True)
+    # Use st.html if available to guarantee injection into DOM head
+    if hasattr(st, "html"):
+        st.html(css + STATIC_CSS)
+    else:
+        st.markdown(css + STATIC_CSS, unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------
