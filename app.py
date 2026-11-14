@@ -70,6 +70,24 @@ html, body, [class*="css"], .stApp {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+html, body { background: var(--bg-base) !important; color-scheme: inherit; }
+[data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {
+    background: transparent !important;
+}
+
+/* Unchecked radios / checkboxes: native styling follows Streamlit's own theme, which can
+   clash with ours, so give the empty state an explicit themed look. */
+[data-baseweb="radio"]:has(input:not(:checked)) > div:first-child {
+    background: var(--field) !important;
+    border: 1.5px solid var(--g-purple) !important;
+    filter: hue-rotate(90deg); /* cancels the parent's 270deg accent shift below */
+}
+[data-baseweb="checkbox"]:has(input:not(:checked)) > span:first-of-type {
+    background: var(--field) !important;
+    border-color: var(--g-purple) !important;
+    filter: hue-rotate(90deg);
+}
+
 .stApp {
     color: var(--text);
     background:
@@ -136,8 +154,12 @@ div[data-baseweb="select"] > div {
     border-radius: 14px !important;
     transition: border-color .2s ease, box-shadow .2s ease;
 }
-.stTextArea textarea, .stTextInput input, .stNumberInput input {
-    background: transparent !important;
+/* Paint the real <textarea>/<input> element itself, so the colour is right
+   no matter what Streamlit's own theme put on the wrappers around it. */
+[data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input, .stTextArea textarea, .stTextInput input, .stNumberInput input {
+    background: var(--field) !important;
+    border-radius: 14px !important;
     color: var(--text) !important;
     -webkit-text-fill-color: var(--text) !important;
 }
