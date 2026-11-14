@@ -26,16 +26,8 @@ DEFAULT_WEIGHTS = "./weights/model_weights.h5"
 
 
 # --------------------------------------------------------------------------
-# Theming (no config.toml needed: everything is injected as CSS)
+# Theming
 # Gemini palette: blue #4285F4 -> purple #9B72CB -> pink/red #D96570
-#
-# Two themes:
-#   light -> Gemini colours on a bright, airy canvas
-#   dark  -> deep midnight canvas with the same Gemini accents, glowing
-#
-# Every UI colour is driven by CSS variables so switching themes is a pure
-# variable swap. BaseWeb / native widgets are handled with explicit
-# `color-scheme` + targeted overrides so they never leak the wrong theme.
 # --------------------------------------------------------------------------
 THEMES = {
     "dark": {
@@ -78,41 +70,38 @@ html, body, [class*="css"], .stApp {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* ---- Color scheme: makes native controls (inputs, selects, scrollbars,
-        date pickers) render in the correct theme. Applied broadly because
-        BaseWeb portals render outside .stApp. ---- */
 html { color-scheme: var(--g-scheme); }
 body { color-scheme: var(--g-scheme); }
 .stApp { color-scheme: var(--g-scheme); }
 
-html, body { background: var(--bg-base) !important; }
+/* Force backgrounds to respect theme variables */
+html, body { background-color: var(--bg-base) !important; }
+.stApp {
+    color: var(--text);
+    background-color: var(--bg-base) !important;
+    background-image:
+        radial-gradient(900px 600px at 8% -5%,  var(--glow-blue), transparent 60%),
+        radial-gradient(800px 600px at 95% 5%,  var(--glow-purple), transparent 60%),
+        radial-gradient(900px 700px at 60% 105%, var(--glow-pink), transparent 60%) !important;
+    background-attachment: fixed !important;
+}
 [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {
     background: transparent !important;
 }
 
-.stApp {
-    color: var(--text);
-    background:
-        radial-gradient(900px 600px at 8% -5%,  var(--glow-blue), transparent 60%),
-        radial-gradient(800px 600px at 95% 5%,  var(--glow-purple), transparent 60%),
-        radial-gradient(900px 700px at 60% 105%, var(--glow-pink), transparent 60%),
-        var(--bg-base);
-    background-attachment: fixed;
-}
-
-[data-testid="stHeader"] { background: transparent; }
+[data-testid="stHeader"] { background: transparent !important; }
 .block-container { padding-top: 2.5rem; max-width: 1100px; }
 
-/* Force readable text in whichever theme is active */
+/* Force readable text */
 .stApp :is(p, label, span, small, li, legend, h1, h2, h3, h4, h5, h6) { color: var(--text); }
 [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * { color: var(--muted) !important; }
 
-/* Sidebar as frosted glass */
+/* Sidebar */
 [data-testid="stSidebar"] {
-    background: var(--sidebar-bg);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border-right: 1px solid var(--card-border);
+    background-color: var(--sidebar-bg) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border-right: 1px solid var(--card-border) !important;
 }
 [data-testid="stSidebar"] h2 {
     font-size: 0.95rem;
@@ -146,21 +135,23 @@ html, body { background: var(--bg-base) !important; }
 }
 .stApp h3 { font-weight: 600; letter-spacing: -0.01em; }
 
-/* Inputs — every wrapper layer Streamlit stacks must be painted, otherwise
-   a stale light/dark theme shows through in the active theme. */
+/* Inputs (Fix for thick black border and invisible text) */
 [data-baseweb="textarea"], [data-baseweb="base-input"], [data-baseweb="input"],
 div[data-baseweb="select"] > div {
-    background: var(--field) !important;
+    background-color: var(--field) !important;
     border: 1px solid var(--card-border) !important;
     border-radius: 14px !important;
     transition: border-color .2s ease, box-shadow .2s ease;
 }
 [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input,
 [data-testid="stNumberInput"] input, .stTextArea textarea, .stTextInput input, .stNumberInput input {
-    background: var(--field) !important;
+    background-color: transparent !important;
     border-radius: 14px !important;
     color: var(--text) !important;
     -webkit-text-fill-color: var(--text) !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 .stTextArea textarea::placeholder, .stTextInput input::placeholder {
     color: var(--muted) !important;
@@ -168,97 +159,111 @@ div[data-baseweb="select"] > div {
 }
 .stNumberInput button { color: var(--text) !important; background: transparent !important; }
 [data-baseweb="select"] * { color: var(--text) !important; }
+
 [data-baseweb="textarea"]:focus-within, [data-baseweb="base-input"]:focus-within {
     border-color: var(--g-purple) !important;
     box-shadow: 0 0 0 3px rgba(155, 114, 203, 0.25) !important;
 }
 
-/* Top-right toolbar (Share, star, edit, GitHub, menu) */
-[data-testid="stToolbar"], [data-testid="stToolbar"] * { color: var(--text) !important; }
-[data-testid="stToolbar"] svg { fill: currentColor; opacity: 0.85; }
-.stTextArea textarea:focus, .stTextInput input:focus, .stNumberInput input:focus {
-    border-color: var(--g-purple) !important;
-    box-shadow: 0 0 0 3px rgba(155, 114, 203, 0.25) !important;
+/* Toolbar icons (Fix for invisible icons in dark mode) */
+[data-testid="stToolbar"] { background: transparent !important; }
+[data-testid="stToolbar"] button, [data-testid="stToolbar"] svg {
+    color: var(--text) !important;
+    fill: var(--text) !important;
 }
 
-/* Dropdown menus render in a portal outside .stApp */
+/* Dropdown menus */
 div[data-baseweb="popover"] ul, div[data-baseweb="menu"] {
-    background: var(--popover-bg) !important;
+    background-color: var(--popover-bg) !important;
 }
 div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--text) !important; }
 
 /* File uploader */
 [data-testid="stFileUploader"] section {
-    background: var(--field) !important;
-    border: 1px dashed rgba(155, 114, 203, 0.65);
+    background-color: var(--field) !important;
+    border: 1px dashed rgba(155, 114, 203, 0.65) !important;
     border-radius: 14px;
 }
 [data-testid="stFileUploader"] section *, [data-testid="stFileUploaderFile"] * { color: var(--text) !important; }
-[data-testid="stFileUploader"] section button {
-    background: var(--g-grad) !important;
-    border: none !important;
-    border-radius: 999px !important;
-}
-[data-testid="stFileUploader"] section button, [data-testid="stFileUploader"] section button * {
-    color: #fff !important;
-}
 
 /* Expander */
 [data-testid="stExpander"] {
-    background: var(--card);
-    border: 1px solid var(--card-border);
+    background-color: var(--card) !important;
+    border: 1px solid var(--card-border) !important;
     border-radius: 14px;
     box-shadow: 0 6px 20px var(--shadow);
 }
 [data-testid="stExpander"] details, [data-testid="stExpander"] summary { background: transparent !important; }
 
-/* ---- Widgets: sliders, checkboxes, radios, toggles --------------------
-   Streamlit's default accent is red. We can't override BaseWeb's primary
-   colour via CSS variables, but a hue-rotate on the widget turns that red
-   into the Gemini purple. Crucially, we ALSO paint the unchecked / off
-   backgrounds explicitly, because hue-rotate does NOT change lightness and
-   would otherwise leak the wrong theme's grey. */
-[data-testid="stSlider"], [data-testid="stCheckbox"], [data-testid="stRadio"], [data-testid="stToggle"] {
-    filter: hue-rotate(270deg) saturate(0.85);
+/* ---- Explicit Widget Styling (Replaces fragile hue-rotate hack) ---- */
+/* Radio */
+[data-baseweb="radio"] > div:first-of-type {
+    border-color: var(--muted) !important;
+    background-color: transparent !important;
 }
-[data-baseweb="radio"]:has(input:not(:checked)) > div:first-child,
-[data-baseweb="checkbox"] span:first-of-type {
-    background: var(--field) !important;
-    border: 1.5px solid var(--g-purple) !important;
-    filter: hue-rotate(90deg);  /* cancels the parent's 270deg accent shift */
+[data-baseweb="radio"]:has(input:checked) > div:first-of-type {
+    border-color: var(--g-purple) !important;
 }
-/* Toggle "off" track */
+[data-baseweb="radio"]:has(input:checked) > div:first-of-type > div {
+    background-color: var(--g-purple) !important;
+}
+
+/* Checkbox */
+[data-baseweb="checkbox"] > span:first-of-type {
+    border-color: var(--muted) !important;
+    background-color: transparent !important;
+}
+[data-baseweb="checkbox"]:has(input:checked) > span:first-of-type {
+    background-color: var(--g-purple) !important;
+    border-color: var(--g-purple) !important;
+}
+[data-baseweb="checkbox"]:has(input:checked) svg { fill: #fff !important; }
+
+/* Toggle */
 [data-testid="stToggle"] [data-baseweb="toggle"] > div:last-child {
-    background: var(--field) !important;
+    background-color: var(--muted) !important;
+}
+[data-testid="stToggle"] [data-baseweb="toggle"] > div:last-child > div {
+    background-color: #fff !important;
+}
+[data-testid="stToggle"] [data-baseweb="toggle"]:has(input:checked) > div:last-child {
+    background-color: var(--g-purple) !important;
+}
+
+/* Slider */
+[data-testid="stSlider"] [data-baseweb="slider"] [role="slider"] {
+    background-color: var(--g-purple) !important;
+    border-color: var(--g-purple) !important;
+}
+[data-testid="stSlider"] [data-baseweb="slider"] > div > div > div > div {
+    background-color: var(--g-purple) !important;
 }
 
 /* Buttons */
 .stButton > button, .stDownloadButton > button {
-    background: var(--g-grad);
-    border: none;
-    border-radius: 999px;
-    padding: 0.65rem 1.8rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    box-shadow: 0 8px 24px rgba(155, 114, 203, 0.35);
-    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    background: var(--g-grad) !important;
+    border: none !important;
+    border-radius: 999px !important;
+    padding: 0.65rem 1.8rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+    box-shadow: 0 8px 24px rgba(155, 114, 203, 0.35) !important;
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease !important;
 }
 .stButton > button, .stButton > button *, .stDownloadButton > button, .stDownloadButton > button * {
     color: #fff !important;
 }
 .stButton > button:hover, .stDownloadButton > button:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.08);
-    box-shadow: 0 12px 30px rgba(66, 133, 244, 0.45);
-    border: none;
+    transform: translateY(-2px) !important;
+    filter: brightness(1.08) !important;
+    box-shadow: 0 12px 30px rgba(66, 133, 244, 0.45) !important;
 }
-.stButton > button:active, .stDownloadButton > button:active { transform: translateY(0); }
 
 /* Result image as a card */
 [data-testid="stImage"] img {
-    border-radius: 18px;
-    border: 1px solid var(--card-border);
-    box-shadow: 0 18px 50px var(--shadow);
+    border-radius: 18px !important;
+    border: 1px solid var(--card-border) !important;
+    box-shadow: 0 18px 50px var(--shadow) !important;
 }
 
 [data-testid="stAlert"] { border-radius: 14px; }
@@ -267,9 +272,6 @@ div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--
 
 
 def inject_theme(mode: str):
-    """Swap every themed CSS variable at once. The `--g-scheme` variable is
-    new: it feeds `color-scheme` on html/body/.stApp so native form controls
-    and BaseWeb widgets pick the right palette immediately."""
     t = THEMES[mode]
     root = f"""
     <style>
@@ -394,7 +396,6 @@ def generate(text, writer_path, opts, weights_path, channels, num_attlayers):
 # --------------------------------------------------------------------------
 # UI
 # --------------------------------------------------------------------------
-# The theme switch sits at the top of the sidebar; it must run before the CSS is injected.
 with st.sidebar:
     light_mode = st.toggle("Light theme", value=True, key="light_mode")
 
