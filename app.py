@@ -19,10 +19,211 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Stylised Handwriting Generator", page_icon="✍️", layout="wide")
+st.set_page_config(page_title="Stylised Handwriting Generator", layout="wide")
 
 ASSET_EXTS = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
 DEFAULT_WEIGHTS = "./weights/model_weights.h5"
+
+
+# --------------------------------------------------------------------------
+# Theming (no config.toml needed: everything is injected as CSS)
+# Gemini palette: blue #4285F4 -> purple #9B72CB -> pink/red #D96570
+# --------------------------------------------------------------------------
+THEMES = {
+    "dark": {
+        "bg_base": "#0b0d17",
+        "glow_blue": "rgba(66, 133, 244, 0.28)",
+        "glow_purple": "rgba(155, 114, 203, 0.26)",
+        "glow_pink": "rgba(217, 101, 112, 0.22)",
+        "text": "#F1F3F9",
+        "muted": "rgba(255, 255, 255, 0.60)",
+        "card": "rgba(255, 255, 255, 0.045)",
+        "card_border": "rgba(255, 255, 255, 0.10)",
+        "sidebar_bg": "rgba(14, 16, 28, 0.72)",
+        "popover_bg": "#161a2e",
+        "shadow": "rgba(0, 0, 0, 0.45)",
+        "scheme": "dark",
+    },
+    "light": {
+        "bg_base": "#fcf8fd",
+        "glow_blue": "rgba(66, 133, 244, 0.20)",
+        "glow_purple": "rgba(155, 114, 203, 0.22)",
+        "glow_pink": "rgba(244, 143, 177, 0.30)",
+        "text": "#1f1f33",
+        "muted": "rgba(31, 31, 51, 0.62)",
+        "card": "rgba(255, 255, 255, 0.70)",
+        "card_border": "rgba(155, 114, 203, 0.25)",
+        "sidebar_bg": "rgba(255, 255, 255, 0.62)",
+        "popover_bg": "#ffffff",
+        "shadow": "rgba(155, 114, 203, 0.25)",
+        "scheme": "light",
+    },
+}
+
+STATIC_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+html, body, [class*="css"], .stApp {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.stApp {
+    color: var(--text);
+    background:
+        radial-gradient(900px 600px at 8% -5%,  var(--glow-blue), transparent 60%),
+        radial-gradient(800px 600px at 95% 5%,  var(--glow-purple), transparent 60%),
+        radial-gradient(900px 700px at 60% 105%, var(--glow-pink), transparent 60%),
+        var(--bg-base);
+    background-attachment: fixed;
+}
+
+[data-testid="stHeader"] { background: transparent; }
+.block-container { padding-top: 2.5rem; max-width: 1100px; }
+
+/* Force readable text in whichever theme is active */
+.stApp :is(p, label, span, small, li, legend, h1, h2, h3, h4, h5, h6) { color: var(--text); }
+[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * { color: var(--muted) !important; }
+
+/* Sidebar as frosted glass */
+[data-testid="stSidebar"] {
+    background: var(--sidebar-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-right: 1px solid var(--card-border);
+}
+[data-testid="stSidebar"] h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--g-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    margin-top: 0.8rem;
+}
+
+/* Hero */
+.hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin: 0 0 0.4rem 0;
+    background: var(--g-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+.hero-sub {
+    color: var(--muted);
+    font-size: 1.05rem;
+    font-weight: 300;
+    margin-bottom: 1.6rem;
+}
+.stApp h3 { font-weight: 600; letter-spacing: -0.01em; }
+
+/* Inputs */
+.stTextArea textarea, .stTextInput input, .stNumberInput input,
+div[data-baseweb="select"] > div {
+    background: var(--card) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 14px !important;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+.stNumberInput button { color: var(--text) !important; background: transparent !important; }
+.stTextArea textarea:focus, .stTextInput input:focus, .stNumberInput input:focus {
+    border-color: var(--g-purple) !important;
+    box-shadow: 0 0 0 3px rgba(155, 114, 203, 0.25) !important;
+}
+
+/* Dropdown menus render in a portal outside .stApp */
+div[data-baseweb="popover"] ul, div[data-baseweb="menu"] {
+    background: var(--popover-bg) !important;
+}
+div[data-baseweb="popover"] li, div[data-baseweb="popover"] li * { color: var(--text) !important; }
+
+/* File uploader */
+[data-testid="stFileUploader"] section {
+    background: var(--card);
+    border: 1px dashed rgba(155, 114, 203, 0.6);
+    border-radius: 14px;
+}
+[data-testid="stFileUploader"] section button { color: var(--text) !important; }
+
+/* Expander */
+[data-testid="stExpander"] {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+}
+
+/* Recolour Streamlit's default red accent (sliders, checkboxes, radios, toggles) to purple */
+[data-testid="stSlider"], [data-testid="stCheckbox"], [data-testid="stRadio"], [data-testid="stToggle"] {
+    filter: hue-rotate(270deg) saturate(0.85);
+}
+
+/* Buttons */
+.stButton > button, .stDownloadButton > button {
+    background: var(--g-grad);
+    border: none;
+    border-radius: 999px;
+    padding: 0.65rem 1.8rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    box-shadow: 0 8px 24px rgba(155, 114, 203, 0.35);
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.stButton > button, .stButton > button *, .stDownloadButton > button, .stDownloadButton > button * {
+    color: #fff !important;
+}
+.stButton > button:hover, .stDownloadButton > button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+    box-shadow: 0 12px 30px rgba(66, 133, 244, 0.45);
+    border: none;
+}
+.stButton > button:active, .stDownloadButton > button:active { transform: translateY(0); }
+
+/* Result image as a card */
+[data-testid="stImage"] img {
+    border-radius: 18px;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 18px 50px var(--shadow);
+}
+
+[data-testid="stAlert"] { border-radius: 14px; }
+</style>
+"""
+
+
+def inject_theme(mode: str):
+    t = THEMES[mode]
+    root = f"""
+    <style>
+    :root {{
+        color-scheme: {t['scheme']};
+        --g-blue: #4285F4;
+        --g-purple: #9B72CB;
+        --g-pink: #D96570;
+        --g-grad: linear-gradient(90deg, #4285F4 0%, #9B72CB 50%, #D96570 100%);
+        --bg-base: {t['bg_base']};
+        --glow-blue: {t['glow_blue']};
+        --glow-purple: {t['glow_purple']};
+        --glow-pink: {t['glow_pink']};
+        --text: {t['text']};
+        --muted: {t['muted']};
+        --card: {t['card']};
+        --card-border: {t['card_border']};
+        --sidebar-bg: {t['sidebar_bg']};
+        --popover-bg: {t['popover_bg']};
+        --shadow: {t['shadow']};
+    }}
+    </style>
+    """
+    st.markdown(root + STATIC_CSS, unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------
@@ -121,8 +322,18 @@ def generate(text, writer_path, opts, weights_path, channels, num_attlayers):
 # --------------------------------------------------------------------------
 # UI
 # --------------------------------------------------------------------------
-st.title("✍️ Stylised Handwriting Generator")
-st.caption("Diffusion-based handwriting synthesis with style controls for spacing, slant, boldness, size and layout.")
+# The theme switch sits at the top of the sidebar; it must run before the CSS is injected.
+with st.sidebar:
+    light_mode = st.toggle("Light theme", value=False, key="light_mode")
+
+inject_theme("light" if light_mode else "dark")
+
+st.markdown(
+    '<h1 class="hero-title">Stylised Handwriting Generator</h1>'
+    '<div class="hero-sub">Diffusion-based handwriting synthesis with style controls '
+    'for spacing, slant, boldness, size and layout.</div>',
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
     st.header("Writer style")
